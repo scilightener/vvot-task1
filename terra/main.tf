@@ -53,21 +53,25 @@ resource "yandex_function" "telegram-bot-func" {
   name        = "telegram-bot-func"
 
   folder_id = var.folder_id
-  user_hash = "0.0.15"
+  user_hash = "0.0.28"
   runtime   = "golang121"
   entrypoint = "index.Handle"
   memory             = "128"
-  execution_timeout  = "10"
+  execution_timeout  = "30"
   service_account_id = yandex_iam_service_account.sa.id
 
   content {
-    zip_filename = "../index0.0.15.zip"
+    zip_filename = "../index0.0.28.zip"
   }
 
   environment = {
     TG_BOT_KEY          = var.tg_bot_key
     VISION_API_KEY      = yandex_iam_service_account_api_key.sa-api-key.secret_key
     YAGPT_API_KEY = yandex_iam_service_account_api_key.sa-api-key.secret_key
+    FOLDER_ID = var.folder_id
+    S3_ACCESS_KEY = yandex_iam_service_account_static_access_key.sa-static-key.access_key
+    S3_SECRET_KEY = yandex_iam_service_account_static_access_key.sa-static-key.secret_key
+    YAGPT_INSTRUCTION_PATH = "https://storage.yandexcloud.net/${yandex_storage_bucket.hw1.bucket}/${yandex_storage_object.gpt_instruction.key}"
   }
 }
 
@@ -87,15 +91,6 @@ resource "yandex_api_gateway" "tg-api-gateway" {
       version: 0.0.1
       title: hw1
     paths:
-      /instruction.txt:
-        get:
-          x-yc-apigateway-integration:
-            type: object_storage
-            bucket: "${yandex_storage_bucket.hw1.bucket}"
-            object: instruction.txt
-            presigned_redirect: false
-            service_account_id: "${yandex_iam_service_account.sa.id}"
-          operationId: static
       /telegram-bot-func:
         post:
           x-yc-apigateway-integration:
@@ -122,7 +117,7 @@ resource "null_resource" "telegram_webhook_remove" {
   }
 
   provisioner "local-exec" {
-    command = "curl -X POST https://api.telegram.org/bot${var.tg_bot_key}/deleteWebhook"
+    command = "curl https://api.telegram.org/bot${var.tg_bot_key}/deleteWebhook?drop_pending_updates=True"
   }
 
   lifecycle {
