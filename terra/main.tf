@@ -53,7 +53,7 @@ resource "yandex_function" "telegram-bot-func" {
   name        = "telegram-bot-func"
 
   folder_id = var.folder_id
-  user_hash = "0.0.28"
+  user_hash = "0.0.29"
   runtime   = "golang121"
   entrypoint = "index.Handle"
   memory             = "128"
@@ -61,7 +61,7 @@ resource "yandex_function" "telegram-bot-func" {
   service_account_id = yandex_iam_service_account.sa.id
 
   content {
-    zip_filename = "../index0.0.28.zip"
+    zip_filename = "../index0.0.29.zip"
   }
 
   environment = {
